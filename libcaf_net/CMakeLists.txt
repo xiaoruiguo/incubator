@@ -65,6 +65,7 @@ add_library(libcaf_net_obj OBJECT ${CAF_NET_HEADERS}
   src/tcp_stream_socket.cpp
   src/udp_datagram_socket.cpp
   src/worker.cpp
+  src/serializing_worker.cpp
 )
 
 add_library(libcaf_net "${PROJECT_SOURCE_DIR}/cmake/dummy.cpp"
