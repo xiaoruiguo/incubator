@@ -85,12 +85,9 @@ public:
     // Allow unit tests to run the application without endpoint manager.
     if constexpr (!std::is_base_of<test_tag, Parent>::value)
       manager_ = &parent.manager();
-    size_t workers;
-    if (auto workers_cfg = get_if<size_t>(&system_->config(),
-                                          "middleman.workers"))
-      workers = *workers_cfg;
-    else
-      workers = std::min(3u, std::thread::hardware_concurrency() / 4u) + 1;
+    auto workers = get_or(system_->config(), "middleman.workers",
+                          defaults::middleman::workers);
+    CAF_LOG_DEBUG("using " << CAF_ARG(workers) << " for deserializing");
     for (size_t i = 0; i < workers; ++i)
       hub_->add_new_worker(*queue_, proxies_);
     // Write handshake.
