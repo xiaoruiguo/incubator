@@ -45,7 +45,7 @@ string_view hello_test{"hello test!"};
 
 struct fixture : test_coordinator_fixture<>, host_fixture {
   fixture() {
-    mpx = std::make_shared<multiplexer>(sys);
+    mpx = std::make_shared<multiplexer>();
     mpx->set_thread_id();
     if (auto err = mpx->init())
       CAF_FAIL("mpx->init failed: " << err);
