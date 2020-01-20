@@ -35,7 +35,7 @@ void middleman::init_global_meta_objects() {
 }
 
 middleman::middleman(actor_system& sys) : sys_(sys) {
-  mpx_ = std::make_shared<multiplexer>();
+  mpx_ = std::make_shared<multiplexer>(sys_);
 }
 
 middleman::~middleman() {
