@@ -132,7 +132,8 @@ public:
     // nop
   }
 
-  static expected<buffer_type> serialize(actor_system& sys, const message& x);
+  static error serialize(actor_system& sys, const message& x,
+                         buffer_type& buf);
 
   // -- utility functions ------------------------------------------------------
 

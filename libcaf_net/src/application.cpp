@@ -29,7 +29,6 @@
 #include "caf/detail/network_order.hpp"
 #include "caf/detail/parse.hpp"
 #include "caf/error.hpp"
-#include "caf/expected.hpp"
 #include "caf/logger.hpp"
 #include "caf/net/basp/constants.hpp"
 #include "caf/net/basp/ec.hpp"
@@ -118,13 +117,12 @@ void application::local_actor_down(packet_writer& writer, actor_id id,
   writer.write_packet(hdr, payload);
 }
 
-expected<std::vector<byte>> application::serialize(actor_system& sys,
-                                                   const message& x) {
-  std::vector<byte> result;
-  binary_serializer sink{sys, result};
+error application::serialize(actor_system& sys, const message& x,
+                             std::vector<byte>& buf) {
+  binary_serializer sink{sys, buf};
   if (auto err = x.save(sink))
     return err.value();
-  return result;
+  return none;
 }
 
 strong_actor_ptr application::resolve_local_path(string_view path) {

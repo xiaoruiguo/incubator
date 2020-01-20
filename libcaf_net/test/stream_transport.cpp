@@ -137,12 +137,12 @@ public:
     // nop
   }
 
-  static expected<buffer_type> serialize(actor_system& sys, const message& x) {
-    buffer_type result;
-    binary_serializer sink{sys, result};
+  static error serialize(actor_system& sys, const message& x,
+                         std::vector<byte>& buf) {
+    binary_serializer sink{sys, buf};
     if (auto err = x.save(sink))
       return err.value();
-    return result;
+    return none;
   }
 
 private:
