@@ -21,6 +21,7 @@
 #include <string>
 
 #include "caf/actor.hpp"
+#include "caf/detail/net_export.hpp"
 #include "caf/fwd.hpp"
 #include "caf/intrusive/drr_queue.hpp"
 #include "caf/intrusive/fifo_inbox.hpp"
@@ -56,7 +57,7 @@ public:
 
   using element_ptr = std::unique_ptr<element>;
 
-  class event final : public element {
+  class CAF_NET_EXPORT event final : public element {
   public:
     struct resolve_request {
       uri locator;
