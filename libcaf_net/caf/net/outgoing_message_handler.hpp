@@ -29,15 +29,12 @@ public:
     auto& dref = static_cast<Subtype&>(*this);
     auto& content = dref.mailbox_elem_->content();
     if (auto err = dref.sf_(*dref.system_, content, dref.buf_))
-      CAF_LOG_ERROR(
-        "unable to serialize payload: " << dref.system_->render(err));
+      CAF_LOG_ERROR("unable to serialize payload: " << to_string(err));
     else
-      dref.queue_
-        ->push(dref.msg_id_,
-               new endpoint_manager_queue::message{std::move(
-                                                     dref.mailbox_elem_),
-                                                   std::move(dref.receiver_),
-                                                   std::move(dref.buf_)});
+      dref.queue_->push(dref.msg_id_,
+                        new endpoint_manager_queue::message{
+                          std::move(dref.mailbox_elem_),
+                          std::move(dref.receiver_), std::move(dref.buf_)});
   }
 };
 

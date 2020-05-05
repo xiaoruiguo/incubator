@@ -185,7 +185,7 @@ CAF_TEST(shutdown) {
     cv.notify_one();
     mpx->run();
   };
-  CAF_REQUIRE_EQUAL(mpx->init(), none);
+  CAF_REQUIRE_EQUAL(mpx->init(sys), none);
   auto sockets = unbox(make_stream_socket_pair());
   auto alice = make_counted<dummy_manager>(manager_count, sockets.first, mpx);
   auto bob = make_counted<dummy_manager>(manager_count, sockets.second, mpx);

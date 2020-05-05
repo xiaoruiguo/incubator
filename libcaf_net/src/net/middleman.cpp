@@ -68,7 +68,7 @@ void middleman::stop() {
 }
 
 void middleman::init(actor_system_config& cfg) {
-  if (auto err = mpx_->init()) {
+  if (auto err = mpx_->init(system())) {
     CAF_LOG_ERROR("mgr->init() failed: " << err);
     CAF_RAISE_ERROR("mpx->init() failed");
   }

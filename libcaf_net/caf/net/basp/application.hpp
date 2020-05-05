@@ -126,8 +126,7 @@ public:
     // nop
   }
 
-  static error serialize(actor_system& sys, const message& x,
-                         buffer_type& buf);
+  static error serialize(actor_system& sys, const message& x, buffer_type& buf);
 
   // -- utility functions ------------------------------------------------------
 

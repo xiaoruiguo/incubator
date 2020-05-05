@@ -100,8 +100,10 @@ error multiplexer::init(actor_system& sys) {
   CAF_LOG_DEBUG("using " << CAF_ARG(workers) << " for serializing");
   for (size_t i = 0; i < workers; ++i)
     serializing_worker_hub_.add_new_worker(sys);
-  workers = get_or(sys.config(), "middleman.workers",
-                   defaults::middleman::workers);
+  if (auto workers_cfg = get_if<size_t>(&sys.config(), "middleman.workers"))
+    workers = *workers_cfg;
+  else
+    workers = std::min(3u, std::thread::hardware_concurrency() / 4u) + 1;
   CAF_LOG_DEBUG("using " << CAF_ARG(workers) << " for deserializing");
   for (size_t i = 0; i < workers; ++i)
     basp_worker_hub_.add_new_worker(sys);
