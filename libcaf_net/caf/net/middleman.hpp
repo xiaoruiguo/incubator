@@ -22,6 +22,7 @@
 #include <set>
 #include <string>
 #include <thread>
+#include <vector>
 
 #include "caf/actor_system.hpp"
 #include "caf/detail/net_export.hpp"
@@ -130,7 +131,66 @@ public:
 
   expected<uint16_t> port(string_view scheme) const;
 
+  // -- timestamps -------------------------------------------------------------
+
+  using timestamp_buffer = std::vector<std::chrono::microseconds>;
+
+  struct timestamps {
+    timestamps(timestamp_buffer ep_enqueue, timestamp_buffer ep_dequeue,
+               timestamp_buffer trans_enqueue, timestamp_buffer trans_dequeue)
+      : ep_enqueue_(ep_enqueue),
+        ep_dequeue_(ep_dequeue),
+        trans_enqueue_(trans_enqueue),
+        trans_dequeue_(trans_dequeue) {
+      // nop
+    }
+
+    timestamp_buffer ep_enqueue_;
+
+    timestamp_buffer ep_dequeue_;
+
+    timestamp_buffer trans_enqueue_;
+
+    timestamp_buffer trans_dequeue_;
+  };
+
+  void ts_ep_enqueue() {
+    ts_enqueue_impl(ep_enqueue_timestamps_);
+  }
+
+  void ts_ep_dequeue() {
+    ts_enqueue_impl(ep_dequeue_timestamps_);
+  }
+
+  void ts_trans_enqueue() {
+    ts_enqueue_impl(trans_enqueue_timestamps_);
+  }
+
+  void ts_trans_dequeue() {
+    ts_enqueue_impl(trans_dequeue_timestamps_);
+  }
+
+  timestamps get_timestamps() {
+    return {ep_enqueue_timestamps_, ep_dequeue_timestamps_,
+            trans_enqueue_timestamps_, trans_dequeue_timestamps_};
+  }
+
 private:
+  void ts_enqueue_impl(timestamp_buffer& buf) {
+    using namespace std::chrono;
+    auto ts
+      = duration_cast<microseconds>(system_clock::now().time_since_epoch());
+    buf.push_back(ts);
+  }
+
+  timestamp_buffer ep_enqueue_timestamps_;
+
+  timestamp_buffer ep_dequeue_timestamps_;
+
+  timestamp_buffer trans_enqueue_timestamps_;
+
+  timestamp_buffer trans_dequeue_timestamps_;
+
   // -- constructors, destructors, and assignment operators --------------------
 
   explicit middleman(actor_system& sys);

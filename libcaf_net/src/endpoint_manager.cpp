@@ -18,7 +18,10 @@
 
 #include "caf/net/endpoint_manager.hpp"
 
+#include <chrono>
+
 #include "caf/intrusive/inbox_result.hpp"
+#include "caf/net/middleman.hpp"
 #include "caf/net/multiplexer.hpp"
 #include "caf/sec.hpp"
 #include "caf/send.hpp"
@@ -61,6 +64,7 @@ void endpoint_manager::resolve(uri locator, actor listener) {
 void endpoint_manager::enqueue(mailbox_element_ptr msg,
                                strong_actor_ptr receiver) {
   using message_type = endpoint_manager_queue::message;
+  sys_.network_manager().ts_ep_enqueue();
   auto ptr = new message_type(std::move(msg), std::move(receiver));
   enqueue(ptr);
 }

@@ -25,6 +25,7 @@
 #include "caf/logger.hpp"
 #include "caf/net/endpoint_manager.hpp"
 #include "caf/net/fwd.hpp"
+#include "caf/net/middleman.hpp"
 #include "caf/net/receive_policy.hpp"
 #include "caf/net/stream_socket.hpp"
 #include "caf/net/transport_base.hpp"
@@ -151,6 +152,7 @@ public:
     };
     auto fetch_next_message = [&] {
       if (auto msg = manager.next_message()) {
+        this->system().network_manager().ts_ep_dequeue();
         this->next_layer_.write_message(*this, std::move(msg));
         return true;
       }
@@ -167,6 +169,7 @@ public:
   void write_packet(id_type, span<byte_buffer*> buffers) override {
     CAF_LOG_TRACE("");
     CAF_ASSERT(!buffers.empty());
+    this->system().network_manager().ts_trans_enqueue();
     if (this->write_queue_.empty())
       this->manager().register_writing();
     // By convention, the first buffer is a header buffer. Every other buffer is
