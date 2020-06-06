@@ -19,10 +19,13 @@
 #pragma once
 
 #include <deque>
+#include <iostream>
 
 #include "caf/byte_buffer.hpp"
+#include "caf/detail/net_export.hpp"
 #include "caf/fwd.hpp"
 #include "caf/logger.hpp"
+#include "caf/net/defaults.hpp"
 #include "caf/net/endpoint_manager.hpp"
 #include "caf/net/fwd.hpp"
 #include "caf/net/receive_policy.hpp"
@@ -41,7 +44,8 @@ using stream_transport_base
 
 /// Implements a stream_transport that manages a stream socket.
 template <class Application>
-class stream_transport : public stream_transport_base<Application> {
+class CAF_NET_EXPORT stream_transport
+  : public stream_transport_base<Application> {
 public:
   // -- member types -----------------------------------------------------------
 
@@ -63,7 +67,8 @@ public:
       read_threshold_(1024),
       collected_(0),
       max_(1024),
-      rd_flag_(net::receive_policy_flag::exactly) {
+      rd_flag_(net::receive_policy_flag::exactly),
+      num_heap_allocs_pre_app_(0) {
     CAF_ASSERT(handle != invalid_socket);
     nodelay(handle, true);
   }
@@ -151,6 +156,7 @@ public:
     };
     auto fetch_next_message = [&] {
       if (auto msg = manager.next_message()) {
+        num_heap_allocs_pre_app_ = num_heap_allocs;
         this->next_layer_.write_message(*this, std::move(msg));
         return true;
       }
@@ -167,6 +173,8 @@ public:
   void write_packet(id_type, span<byte_buffer*> buffers) override {
     CAF_LOG_TRACE("");
     CAF_ASSERT(!buffers.empty());
+    std::cout << "diff HEAP allocs = "
+              << num_heap_allocs - num_heap_allocs_pre_app_ << std::endl;
     if (this->write_queue_.empty())
       this->manager().register_writing();
     // By convention, the first buffer is a header buffer. Every other buffer is
@@ -216,6 +224,8 @@ private:
   size_t collected_;
   size_t max_;
   receive_policy_flag rd_flag_;
+
+  size_t num_heap_allocs_pre_app_;
 };
 
 } // namespace caf::net

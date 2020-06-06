@@ -18,12 +18,15 @@
 
 #pragma once
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 
 #include "caf/detail/net_export.hpp"
 
 // -- hard-coded default values for various CAF options ------------------------
+
+CAF_NET_EXPORT extern std::atomic<size_t> num_heap_allocs;
 
 namespace caf::defaults::middleman {
 

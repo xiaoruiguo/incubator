@@ -18,6 +18,10 @@
 
 #include "caf/net/defaults.hpp"
 
+#include <atomic>
+
+std::atomic<size_t> num_heap_allocs = 0;
+
 namespace caf::defaults::middleman {
 
 const size_t max_payload_buffers = 100;
