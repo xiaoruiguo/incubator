@@ -154,6 +154,14 @@ public:
     timestamp_buffer trans_dequeue_;
   };
 
+  void start_timestamps() {
+    take_timestamps_ = true;
+  }
+
+  void stop_timestamps() {
+    take_timestamps_ = false;
+  }
+
   void ts_ep_enqueue() {
     ts_enqueue_impl(ep_enqueue_timestamps_);
   }
@@ -178,10 +186,14 @@ public:
 private:
   void ts_enqueue_impl(timestamp_buffer& buf) {
     using namespace std::chrono;
-    auto ts
-      = duration_cast<microseconds>(system_clock::now().time_since_epoch());
-    buf.push_back(ts);
+    if (take_timestamps_) {
+      auto ts
+        = duration_cast<microseconds>(system_clock::now().time_since_epoch());
+      buf.push_back(ts);
+    }
   }
+
+  bool take_timestamps_ = false;
 
   timestamp_buffer ep_enqueue_timestamps_;
 
