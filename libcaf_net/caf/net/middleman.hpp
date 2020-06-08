@@ -139,7 +139,7 @@ public:
     timestamps(timestamp_buffer ep_enqueue, timestamp_buffer ep_dequeue,
                timestamp_buffer trans_enqueue, timestamp_buffer t1,
                timestamp_buffer t2, timestamp_buffer t3, timestamp_buffer t4,
-               timestamp_buffer t5)
+               timestamp_buffer t5, timestamp_buffer packet_written)
       : ep_enqueue_(ep_enqueue),
         ep_dequeue_(ep_dequeue),
         trans_enqueue_(trans_enqueue),
@@ -147,7 +147,8 @@ public:
         application_t2_(t2),
         application_t3_(t3),
         application_t4_(t4),
-        application_t5_(t5) {
+        application_t5_(t5),
+        trans_packet_written_(packet_written) {
       // nop
     }
 
@@ -165,6 +166,8 @@ public:
     timestamp_buffer application_t3_;
     timestamp_buffer application_t4_;
     timestamp_buffer application_t5_;
+
+    timestamp_buffer trans_packet_written_;
   };
 
   void start_timestamps() {
@@ -207,11 +210,16 @@ public:
     ts_enqueue_impl(application_t5_);
   }
 
+  void ts_trans_packet_written() {
+    ts_enqueue_impl(trans_packet_written_);
+  }
+
   timestamps get_timestamps() {
     return {ep_enqueue_timestamps_,    ep_dequeue_timestamps_,
             trans_enqueue_timestamps_, application_t1_,
             application_t2_,           application_t3_,
-            application_t4_,           application_t5_};
+            application_t4_,           application_t5_,
+            trans_packet_written_};
   }
 
 private:
@@ -238,6 +246,8 @@ private:
   timestamp_buffer application_t3_;
   timestamp_buffer application_t4_;
   timestamp_buffer application_t5_;
+
+  timestamp_buffer trans_packet_written_;
 
   // -- constructors, destructors, and assignment operators --------------------
 

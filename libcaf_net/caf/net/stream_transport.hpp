@@ -148,6 +148,7 @@ public:
           return err;
         }
       }
+      this->system().network_manager().ts_trans_packet_written();
       return none;
     };
     auto fetch_next_message = [&] {
