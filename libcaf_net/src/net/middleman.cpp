@@ -38,6 +38,14 @@ void middleman::init_global_meta_objects() {
 }
 
 middleman::middleman(actor_system& sys) : sys_(sys) {
+  ep_enqueue_timestamps_.reserve(100'000);
+  ep_dequeue_timestamps_.reserve(100'000);
+  trans_enqueue_timestamps_.reserve(100'000);
+  application_t1_.reserve(100'000);
+  application_t2_.reserve(100'000);
+  application_t3_.reserve(100'000);
+  application_t4_.reserve(100'000);
+  application_t5_.reserve(100'000);
   mpx_ = std::make_shared<multiplexer>();
 }
 

@@ -32,6 +32,7 @@
 #include "caf/logger.hpp"
 #include "caf/net/basp/constants.hpp"
 #include "caf/net/basp/ec.hpp"
+#include "caf/net/middleman.hpp"
 #include "caf/net/packet_writer.hpp"
 #include "caf/no_stages.hpp"
 #include "caf/none.hpp"
@@ -51,12 +52,14 @@ error application::write_message(
   CAF_ASSERT(ptr != nullptr);
   CAF_ASSERT(ptr->msg != nullptr);
   CAF_LOG_TRACE(CAF_ARG2("content", ptr->msg->content()));
+  system().network_manager().ts_app_t1();
   const auto& src = ptr->msg->sender;
   const auto& dst = ptr->receiver;
   if (dst == nullptr) {
     // TODO: valid?
     return none;
   }
+  system().network_manager().ts_app_t2();
   auto payload_buf = writer.next_payload_buffer();
   binary_serializer sink{system(), payload_buf};
   if (src != nullptr) {
@@ -68,13 +71,16 @@ error application::write_message(
     if (auto err = sink(node_id{}, actor_id{0}, dst->id(), ptr->msg->stages))
       return err;
   }
+  system().network_manager().ts_app_t3();
   if (auto err = sink(ptr->msg->content()))
     return err;
+  system().network_manager().ts_app_t4();
   auto hdr = writer.next_header_buffer();
   to_bytes(header{message_type::actor_message,
                   static_cast<uint32_t>(payload_buf.size()),
                   ptr->msg->mid.integer_value()},
            hdr);
+  system().network_manager().ts_app_t5();
   writer.write_packet(hdr, payload_buf);
   return none;
 }

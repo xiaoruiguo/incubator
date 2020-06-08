@@ -137,11 +137,17 @@ public:
 
   struct timestamps {
     timestamps(timestamp_buffer ep_enqueue, timestamp_buffer ep_dequeue,
-               timestamp_buffer trans_enqueue, timestamp_buffer trans_dequeue)
+               timestamp_buffer trans_enqueue, timestamp_buffer t1,
+               timestamp_buffer t2, timestamp_buffer t3, timestamp_buffer t4,
+               timestamp_buffer t5)
       : ep_enqueue_(ep_enqueue),
         ep_dequeue_(ep_dequeue),
         trans_enqueue_(trans_enqueue),
-        trans_dequeue_(trans_dequeue) {
+        application_t1_(t1),
+        application_t2_(t2),
+        application_t3_(t3),
+        application_t4_(t4),
+        application_t5_(t5) {
       // nop
     }
 
@@ -152,6 +158,13 @@ public:
     timestamp_buffer trans_enqueue_;
 
     timestamp_buffer trans_dequeue_;
+
+    // application timestamps
+    timestamp_buffer application_t1_;
+    timestamp_buffer application_t2_;
+    timestamp_buffer application_t3_;
+    timestamp_buffer application_t4_;
+    timestamp_buffer application_t5_;
   };
 
   void start_timestamps() {
@@ -174,13 +187,31 @@ public:
     ts_enqueue_impl(trans_enqueue_timestamps_);
   }
 
-  void ts_trans_dequeue() {
-    ts_enqueue_impl(trans_dequeue_timestamps_);
+  void ts_app_t1() {
+    ts_enqueue_impl(application_t1_);
+  }
+
+  void ts_app_t2() {
+    ts_enqueue_impl(application_t2_);
+  }
+
+  void ts_app_t3() {
+    ts_enqueue_impl(application_t3_);
+  }
+
+  void ts_app_t4() {
+    ts_enqueue_impl(application_t4_);
+  }
+
+  void ts_app_t5() {
+    ts_enqueue_impl(application_t5_);
   }
 
   timestamps get_timestamps() {
-    return {ep_enqueue_timestamps_, ep_dequeue_timestamps_,
-            trans_enqueue_timestamps_, trans_dequeue_timestamps_};
+    return {ep_enqueue_timestamps_,    ep_dequeue_timestamps_,
+            trans_enqueue_timestamps_, application_t1_,
+            application_t2_,           application_t3_,
+            application_t4_,           application_t5_};
   }
 
 private:
@@ -201,7 +232,12 @@ private:
 
   timestamp_buffer trans_enqueue_timestamps_;
 
-  timestamp_buffer trans_dequeue_timestamps_;
+  // application timestamps
+  timestamp_buffer application_t1_;
+  timestamp_buffer application_t2_;
+  timestamp_buffer application_t3_;
+  timestamp_buffer application_t4_;
+  timestamp_buffer application_t5_;
 
   // -- constructors, destructors, and assignment operators --------------------
 
