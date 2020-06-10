@@ -84,6 +84,7 @@ public:
                       << CAF_ARG(this->handle_.id) << CAF_ARG(*num_bytes));
         this->collected_ += *num_bytes;
         if (this->collected_ >= this->read_threshold_) {
+          this->system().network_manager().ts_trans_read_event();
           if (auto err = this->next_layer_.handle_data(
                 *this, make_span(this->read_buf_))) {
             CAF_LOG_ERROR("handle_data failed: " << CAF_ARG(err));

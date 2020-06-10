@@ -47,6 +47,7 @@ middleman::middleman(actor_system& sys) : sys_(sys) {
   application_t4_.reserve(100'000);
   application_t5_.reserve(100'000);
   trans_packet_written_.reserve(100'000);
+  trans_read_event_.reserve(100'000);
   mpx_ = std::make_shared<multiplexer>();
 }
 
