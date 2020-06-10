@@ -145,11 +145,16 @@ public:
       return none;
     };
     auto fetch_next_message = [&] {
-      if (auto msg = manager.next_message()) {
-        this->next_layer_.write_message(*this, std::move(msg));
-        return true;
+      bool got_messages = false;
+      for (int i=0; i < 4; ++i) {
+        if (auto msg = manager.next_message()) {
+          this->next_layer_.write_message(*this, std::move(msg));
+          got_messages = true;
+        } else {
+          break;
+        }
       }
-      return false;
+      return got_messages;
     };
     do {
       if (auto err = drain_write_queue())
