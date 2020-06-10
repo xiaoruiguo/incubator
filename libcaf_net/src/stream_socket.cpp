@@ -219,6 +219,24 @@ variant<size_t, sec> write(stream_socket x,
   return check_stream_socket_io_res(res);
 }
 
+variant<size_t, sec> write(stream_socket x, span<byte_buffer> bufs,
+                           size_t offset) {
+  CAF_ASSERT(bufs.size() < 10);
+  iovec buf_array[10];
+  auto it = bufs.begin();
+  while (it != bufs.end() && offset >= it->size()) {
+    offset = offset - it->size();
+    ++it;
+  }
+  auto idx = 0;
+  buf_array[idx++] = iovec{const_cast<byte*>(it->data() + offset),
+                           it->size() - offset};
+  for (++it; it != bufs.end(); ++it)
+    buf_array[idx++] = iovec{const_cast<byte*>(it->data()), it->size()};
+  auto res = writev(x.id, buf_array, static_cast<int>(idx));
+  return check_stream_socket_io_res(res);
+}
+
 #endif // CAF_WINDOWS
 
 variant<size_t, sec>

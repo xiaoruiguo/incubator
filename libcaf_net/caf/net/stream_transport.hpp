@@ -53,12 +53,13 @@ public:
 
   using id_type = typename super::id_type;
 
-  using write_queue_type = std::deque<std::pair<bool, byte_buffer>>;
+  using write_queue_type = std::vector<byte_buffer>;
 
   // -- constructors, destructors, and assignment operators --------------------
 
   stream_transport(stream_socket handle, application_type application)
     : super(handle, std::move(application)),
+      current_packet_size_(0),
       written_(0),
       read_threshold_(1024),
       collected_(0),
@@ -110,41 +111,35 @@ public:
     auto drain_write_queue = [this]() -> error_code<sec> {
       // Helper function to sort empty buffers back into the right caches.
       auto recycle = [this]() {
-        auto& front = this->write_queue_.front();
-        auto& is_header = front.first;
-        auto& buf = front.second;
-        written_ = 0;
-        buf.clear();
-        if (is_header) {
-          if (this->header_bufs_.size() < this->header_bufs_.capacity())
-            this->header_bufs_.emplace_back(std::move(buf));
-        } else if (this->payload_bufs_.size()
-                   < this->payload_bufs_.capacity()) {
-          this->payload_bufs_.emplace_back(std::move(buf));
-        }
-        write_queue_.pop_front();
+        auto it = this->write_queue_.begin();
+        // First buffer is always a header buffer.
+        if (this->header_bufs_.size() < this->header_bufs_.capacity())
+          this->header_bufs_.emplace_back(std::move(*it));
+        ++it;
+        auto capacity = this->payload_bufs_.capacity()
+                        - this->payload_bufs_.size();
+        auto amount = std::min(this->write_queue_.size() - 1, capacity);
+        std::move(it, it + amount, std::back_inserter(this->payload_bufs_));
+        this->write_queue_.clear();
+        current_packet_size_ = 0;
       };
-      // Write buffers from the write_queue_ for as long as possible.
       while (!write_queue_.empty()) {
-        auto& buf = write_queue_.front().second;
-        CAF_ASSERT(!buf.empty());
-        auto data = buf.data() + written_;
-        auto len = buf.size() - written_;
-        auto write_ret = write(this->handle(), make_span(data, len));
+        auto write_ret = write(this->handle(), make_span(write_queue_),
+                               written_);
         if (auto num_bytes = get_if<size_t>(&write_ret)) {
           CAF_LOG_DEBUG(CAF_ARG(this->handle_.id) << CAF_ARG(*num_bytes));
           written_ += *num_bytes;
-          if (written_ >= buf.size()) {
+          if (written_ >= current_packet_size_) {
             recycle();
             written_ = 0;
+          } else {
+            auto err = get<sec>(write_ret);
+            if (err != sec::unavailable_or_would_block) {
+              CAF_LOG_DEBUG("send failed" << CAF_ARG(err));
+              this->next_layer_.handle_error(err);
+            }
+            return err;
           }
-        } else {
-          auto err = get<sec>(write_ret);
-          if (err != sec::unavailable_or_would_block) {
-            CAF_LOG_DEBUG("send failed" << CAF_ARG(err));
-            this->next_layer_.handle_error(err);
-          }
-          return err;
         }
       }
       return none;
@@ -164,17 +159,15 @@ public:
     return false;
   }
 
-  void write_packet(id_type, span<byte_buffer*> buffers) override {
+  void write_packet(id_type, span<byte_buffer*> bufs) override {
     CAF_LOG_TRACE("");
-    CAF_ASSERT(!buffers.empty());
+    CAF_ASSERT(!bufs.empty());
     if (this->write_queue_.empty())
       this->manager().register_writing();
-    // By convention, the first buffer is a header buffer. Every other buffer is
-    // a payload buffer.
-    auto i = buffers.begin();
-    this->write_queue_.emplace_back(true, std::move(*(*i++)));
-    while (i != buffers.end())
-      this->write_queue_.emplace_back(false, std::move(*(*i++)));
+    for (auto buf : bufs) {
+      current_packet_size_ += buf->size();
+      write_queue_.emplace_back(std::move(*buf));
+    }
   }
 
   void configure_read(receive_policy::config cfg) override {
@@ -211,6 +204,7 @@ private:
   }
 
   write_queue_type write_queue_;
+  size_t current_packet_size_;
   size_t written_;
   size_t read_threshold_;
   size_t collected_;
