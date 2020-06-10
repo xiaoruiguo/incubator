@@ -214,6 +214,7 @@ private:
       return {};
     auto buf = std::move(cache.back());
     cache.pop_back();
+    buf.clear();
     return buf;
   }
 
