@@ -71,8 +71,23 @@ variant<size_t, sec> CAF_NET_EXPORT write(stream_socket x,
 /// @relates stream_socket
 /// @post either the result is a `sec` or a positive (non-zero) integer
 /// @pre `bufs.size() < 10`
-variant<size_t, sec> CAF_NET_EXPORT
-write(stream_socket x, std::initializer_list<span<const byte>> bufs);
+variant<size_t, sec>
+  CAF_NET_EXPORT write(stream_socket x,
+                       std::initializer_list<span<const byte>> bufs);
+
+/// Transmits data from `x` to its peer.
+/// @param x Connected endpoint.
+/// @param bufs Points to the message to send, scattered across up to 10
+///             buffers.
+/// @param offset the number of bytes of the packet that have already been
+///               written.
+/// @returns The number of written bytes on success, otherwise an error code.
+/// @relates stream_socket
+/// @post either the result is a `sec` or a positive (non-zero) integer
+/// @pre `bufs.size() < 10`
+variant<size_t, sec> CAF_NET_EXPORT write(stream_socket x,
+                                          span<byte_buffer> bufs,
+                                          size_t offset = 0);
 
 /// Converts the result from I/O operation on a ::stream_socket to either an
 /// error code or a non-zero positive integer.
