@@ -186,6 +186,10 @@ public:
   /// socket.
   virtual bool handle_write_event(endpoint_manager& parent) = 0;
 
+  virtual byte_buffer& write_buffer() = 0;
+
+  virtual void start_writing() = 0;
+
   /// Queues a packet scattered across multiple buffers to be sent via this
   /// transport.
   /// @param id The id of the destination endpoint.

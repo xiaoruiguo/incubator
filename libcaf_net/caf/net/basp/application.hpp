@@ -28,6 +28,7 @@
 #include "caf/actor_addr.hpp"
 #include "caf/actor_system.hpp"
 #include "caf/actor_system_config.hpp"
+#include "caf/binary_serializer.hpp"
 #include "caf/byte.hpp"
 #include "caf/callback.hpp"
 #include "caf/defaults.hpp"
@@ -95,14 +96,21 @@ public:
     for (size_t i = 0; i < workers; ++i)
       hub_->add_new_worker(*queue_, proxies_);
     // Write handshake.
-    auto hdr = parent.next_header_buffer();
-    auto payload = parent.next_payload_buffer();
-    if (auto err = generate_handshake(payload))
+    auto& buf = parent.write_buffer();
+    auto header_offset = buf.size();
+    binary_serializer sink{&executor_, buf};
+    sink.skip(basp::header_size);
+    if (auto err = sink(system().node(),
+                        get_or(system().config(), "middleman.app-identifiers",
+                               application::default_app_ids())))
       return err;
-    to_bytes(header{message_type::handshake,
-                    static_cast<uint32_t>(payload.size()), version},
-             hdr);
-    parent.write_packet(hdr, payload);
+    sink.seek(header_offset);
+    auto payload_len = buf.size() - (header_offset + basp::header_size);
+    header hdr{message_type::handshake, static_cast<uint32_t>(payload_len),
+               version};
+    if (auto err = sink(hdr))
+      return err;
+    parent.start_writing();
     parent.transport().configure_read(receive_policy::exactly(header_size));
     return none;
   }

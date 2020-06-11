@@ -117,6 +117,14 @@ struct fixture : test_coordinator_fixture<>,
     return {};
   }
 
+  byte_buffer& write_buffer() override {
+    return write_buffer_;
+  }
+
+  void start_writing() override {
+    // nop
+  }
+
   template <class... Ts>
   void configure_read(Ts...) {
     // nop
@@ -138,6 +146,8 @@ protected:
     for (auto buf : buffers)
       output.insert(output.end(), buf->begin(), buf->end());
   }
+
+  byte_buffer write_buffer_;
 
   byte_buffer input;
 

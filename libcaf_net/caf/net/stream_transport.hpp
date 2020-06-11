@@ -106,36 +106,17 @@ public:
 
   bool handle_write_event(endpoint_manager& manager) override {
     CAF_LOG_TRACE(CAF_ARG2("handle", this->handle_.id)
-                  << CAF_ARG2("queue-size", write_queue_.size()));
+                  << CAF_ARG2("queue-size", write_buffer_.size()));
     auto drain_write_queue = [this]() -> error_code<sec> {
-      // Helper function to sort empty buffers back into the right caches.
-      auto recycle = [this]() {
-        auto& front = this->write_queue_.front();
-        auto& is_header = front.first;
-        auto& buf = front.second;
-        written_ = 0;
-        buf.clear();
-        if (is_header) {
-          if (this->header_bufs_.size() < this->header_bufs_.capacity())
-            this->header_bufs_.emplace_back(std::move(buf));
-        } else if (this->payload_bufs_.size()
-                   < this->payload_bufs_.capacity()) {
-          this->payload_bufs_.emplace_back(std::move(buf));
-        }
-        write_queue_.pop_front();
-      };
-      // Write buffers from the write_queue_ for as long as possible.
-      while (!write_queue_.empty()) {
-        auto& buf = write_queue_.front().second;
-        CAF_ASSERT(!buf.empty());
-        auto data = buf.data() + written_;
-        auto len = buf.size() - written_;
+      while (!write_buffer_.empty()) {
+        auto data = write_buffer_.data() + written_;
+        auto len = write_buffer_.size() - written_;
         auto write_ret = write(this->handle(), make_span(data, len));
         if (auto num_bytes = get_if<size_t>(&write_ret)) {
           CAF_LOG_DEBUG(CAF_ARG(this->handle_.id) << CAF_ARG(*num_bytes));
           written_ += *num_bytes;
-          if (written_ >= buf.size()) {
-            recycle();
+          if (written_ >= write_buffer_.size()) {
+            write_buffer_.clear();
             written_ = 0;
           }
         } else {
@@ -160,8 +141,16 @@ public:
       if (auto err = drain_write_queue())
         return err == sec::unavailable_or_would_block;
     } while (fetch_next_message());
-    CAF_ASSERT(write_queue_.empty());
+    CAF_ASSERT(write_buffer_.empty());
     return false;
+  }
+
+  byte_buffer& write_buffer() override {
+    return write_buffer_;
+  }
+
+  void start_writing() override {
+    this->manager().register_writing();
   }
 
   void write_packet(id_type, span<byte_buffer*> buffers) override {
@@ -210,6 +199,7 @@ private:
     }
   }
 
+  byte_buffer write_buffer_;
   write_queue_type write_queue_;
   size_t written_;
   size_t read_threshold_;

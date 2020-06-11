@@ -90,11 +90,11 @@ public:
   template <class Parent>
   void write_message(Parent& parent,
                      std::unique_ptr<endpoint_manager_queue::message> msg) {
-    auto payload_buf = parent.next_payload_buffer();
+    auto& payload_buf = parent.write_buffer();
     binary_serializer sink{parent.system(), payload_buf};
     if (auto err = sink(msg->msg->payload))
       CAF_FAIL("serializing failed: " << err);
-    parent.write_packet(payload_buf);
+    parent.start_writing();
   }
 
   template <class Parent>

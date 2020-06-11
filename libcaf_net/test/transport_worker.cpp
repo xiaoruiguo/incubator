@@ -144,9 +144,18 @@ public:
     return {};
   }
 
+  byte_buffer& write_buffer() {
+    return write_buffer_;
+  }
+
+  void start_writing() {
+    // nop
+  }
+
 private:
   actor_system& sys_;
   std::shared_ptr<transport_result> res_;
+  byte_buffer write_buffer_;
 };
 
 struct fixture : test_coordinator_fixture<>, host_fixture {

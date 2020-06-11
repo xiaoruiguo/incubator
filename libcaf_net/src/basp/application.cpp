@@ -57,8 +57,10 @@ error application::write_message(
     // TODO: valid?
     return none;
   }
-  auto payload_buf = writer.next_payload_buffer();
-  binary_serializer sink{system(), payload_buf};
+  auto& buf = writer.write_buffer();
+  auto header_offset = buf.size();
+  binary_serializer sink{system(), buf};
+  sink.skip(basp::header_size);
   if (src != nullptr) {
     auto src_id = src->id();
     system().registry().put(src_id, src);
@@ -70,52 +72,62 @@ error application::write_message(
   }
   if (auto err = sink(ptr->msg->content()))
     return err;
-  auto hdr = writer.next_header_buffer();
-  to_bytes(header{message_type::actor_message,
-                  static_cast<uint32_t>(payload_buf.size()),
-                  ptr->msg->mid.integer_value()},
-           hdr);
-  writer.write_packet(hdr, payload_buf);
+  sink.seek(header_offset);
+  auto payload_len = buf.size() - (header_offset + basp::header_size);
+  header hdr{message_type::actor_message, static_cast<uint32_t>(payload_len),
+             ptr->msg->mid.integer_value()};
+  if (auto err = sink(hdr))
+    return err;
+  writer.start_writing();
   return none;
 }
 
 void application::resolve(packet_writer& writer, string_view path,
                           const actor& listener) {
   CAF_LOG_TRACE(CAF_ARG(path) << CAF_ARG(listener));
-  auto payload = writer.next_payload_buffer();
-  binary_serializer sink{&executor_, payload};
+  auto& buf = writer.write_buffer();
+  auto header_offset = buf.size();
+  binary_serializer sink{&executor_, buf};
+  sink.skip(basp::header_size);
   if (auto err = sink(path)) {
     CAF_LOG_ERROR("unable to serialize path" << CAF_ARG(err));
     return;
   }
   auto req_id = next_request_id_++;
-  auto hdr = writer.next_header_buffer();
-  to_bytes(header{message_type::resolve_request,
-                  static_cast<uint32_t>(payload.size()), req_id},
-           hdr);
-  writer.write_packet(hdr, payload);
+  auto payload_len = buf.size() - (header_offset + basp::header_size);
+  sink.seek(header_offset);
+  header hdr{message_type::resolve_request, static_cast<uint32_t>(payload_len),
+             req_id};
+  if (auto err = sink(hdr))
+    CAF_LOG_ERROR("could not serialize header: " << CAF_ARG(err));
+  writer.start_writing();
   pending_resolves_.emplace(req_id, listener);
 }
 
 void application::new_proxy(packet_writer& writer, actor_id id) {
-  auto hdr = writer.next_header_buffer();
-  to_bytes(header{message_type::monitor_message, 0, static_cast<uint64_t>(id)},
-           hdr);
-  writer.write_packet(hdr);
+  auto& buf = writer.write_buffer();
+  binary_serializer sink{nullptr, buf};
+  header hdr{message_type::monitor_message, 0, static_cast<uint64_t>(id)};
+  if (auto err = sink(hdr))
+    CAF_LOG_ERROR("could not serialize header: " << CAF_ARG(err));
+  writer.start_writing();
 }
 
 void application::local_actor_down(packet_writer& writer, actor_id id,
                                    error reason) {
-  auto payload = writer.next_payload_buffer();
-  binary_serializer sink{system(), payload};
+  auto& buf = writer.write_buffer();
+  auto header_offset = buf.size();
+  binary_serializer sink{system(), buf};
+  sink.skip(basp::header_size);
   if (auto err = sink(reason))
     CAF_RAISE_ERROR("unable to serialize an error");
-  auto hdr = writer.next_header_buffer();
-  to_bytes(header{message_type::down_message,
-                  static_cast<uint32_t>(payload.size()),
-                  static_cast<uint64_t>(id)},
-           hdr);
-  writer.write_packet(hdr, payload);
+  auto payload_len = buf.size() - (header_offset + basp::header_size);
+  header hdr{message_type::down_message, static_cast<uint32_t>(payload_len),
+             static_cast<uint64_t>(id)};
+  sink.seek(header_offset);
+  if (auto err = sink(hdr))
+    CAF_LOG_ERROR("could not serialize header: " << CAF_ARG(err));
+  writer.start_writing();
 }
 
 strong_actor_ptr application::resolve_local_path(string_view path) {
@@ -296,16 +308,19 @@ error application::handle_resolve_request(packet_writer& writer, header rec_hdr,
     aid = 0;
   }
   // TODO: figure out how to obtain messaging interface.
-  auto payload = writer.next_payload_buffer();
-  binary_serializer sink{&executor_, payload};
+  auto& buf = writer.write_buffer();
+  binary_serializer sink{&executor_, buf};
+  auto header_offset = buf.size();
+  sink.skip(basp::header_size);
   if (auto err = sink(aid, ifs))
     return err;
-  auto hdr = writer.next_header_buffer();
-  to_bytes(header{message_type::resolve_response,
-                  static_cast<uint32_t>(payload.size()),
-                  rec_hdr.operation_data},
-           hdr);
-  writer.write_packet(hdr, payload);
+  auto payload_len = buf.size() - (header_offset + basp::header_size);
+  header hdr{message_type::resolve_response, static_cast<uint32_t>(payload_len),
+             rec_hdr.operation_data};
+  sink.seek(header_offset);
+  if (auto err = sink(hdr))
+    return err;
+  writer.start_writing();
   return none;
 }
 
@@ -352,16 +367,19 @@ error application::handle_monitor_message(packet_writer& writer,
     });
   } else {
     error reason = exit_reason::unknown;
-    auto payload = writer.next_payload_buffer();
-    binary_serializer sink{&executor_, payload};
+    auto& buf = writer.write_buffer();
+    binary_serializer sink{&executor_, buf};
+    auto header_offset = buf.size();
+    sink.skip(basp::header_size);
     if (auto err = sink(reason))
       return err;
-    auto hdr = writer.next_header_buffer();
-    to_bytes(header{message_type::down_message,
-                    static_cast<uint32_t>(payload.size()),
-                    received_hdr.operation_data},
-             hdr);
-    writer.write_packet(hdr, payload);
+    sink.seek(header_offset);
+    auto payload_len = buf.size() - (header_offset + basp::header_size);
+    header hdr{message_type::down_message, static_cast<uint32_t>(payload_len),
+               received_hdr.operation_data};
+    if (auto err = sink(hdr))
+      return err;
+    writer.start_writing();
   }
   return none;
 }

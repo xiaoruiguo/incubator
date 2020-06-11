@@ -65,6 +65,14 @@ public:
     return transport().next_payload_buffer();
   }
 
+  byte_buffer& write_buffer() override {
+    return transport().write_buffer();
+  }
+
+  void start_writing() override {
+    transport().start_writing();
+  }
+
   // -- member functions -------------------------------------------------------
 
   void cancel_timeout(std::string tag, uint64_t id) {

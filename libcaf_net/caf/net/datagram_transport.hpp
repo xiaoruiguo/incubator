@@ -158,6 +158,14 @@ public:
     }
   };
 
+  byte_buffer& write_buffer() override {
+    return write_buffer_;
+  }
+
+  void start_writing() override {
+    // nop
+  }
+
 private:
   // -- utility functions ------------------------------------------------------
 
@@ -206,6 +214,7 @@ private:
   }
 
   std::deque<packet> packet_queue_;
+  byte_buffer write_buffer_;
 };
 
 } // namespace caf::net

@@ -36,6 +36,10 @@ public:
   /// Returns a buffer for writing payload content.
   virtual byte_buffer next_payload_buffer() = 0;
 
+  virtual byte_buffer& write_buffer() = 0;
+
+  virtual void start_writing() = 0;
+
   /// Convenience function to write a packet consisting of multiple buffers.
   /// @param buffers all buffers for the packet. The first buffer is a header
   ///                buffer, the other buffers are payload buffer.
