@@ -102,6 +102,7 @@ public:
     to_bytes(header{message_type::handshake,
                     static_cast<uint32_t>(payload.size()), version},
              hdr);
+    parent.register_writing();
     parent.write_packet(hdr, payload);
     parent.transport().configure_read(receive_policy::exactly(header_size));
     return none;

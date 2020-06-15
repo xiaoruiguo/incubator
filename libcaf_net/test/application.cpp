@@ -117,6 +117,10 @@ struct fixture : test_coordinator_fixture<>,
     return {};
   }
 
+  void register_writing() override {
+    // nop
+  }
+
   template <class... Ts>
   void configure_read(Ts...) {
     // nop

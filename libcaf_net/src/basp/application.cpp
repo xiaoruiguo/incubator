@@ -93,6 +93,7 @@ void application::resolve(packet_writer& writer, string_view path,
   to_bytes(header{message_type::resolve_request,
                   static_cast<uint32_t>(payload.size()), req_id},
            hdr);
+  writer.register_writing();
   writer.write_packet(hdr, payload);
   pending_resolves_.emplace(req_id, listener);
 }
@@ -101,6 +102,7 @@ void application::new_proxy(packet_writer& writer, actor_id id) {
   auto hdr = writer.next_header_buffer();
   to_bytes(header{message_type::monitor_message, 0, static_cast<uint64_t>(id)},
            hdr);
+  writer.register_writing();
   writer.write_packet(hdr);
 }
 
@@ -115,6 +117,7 @@ void application::local_actor_down(packet_writer& writer, actor_id id,
                   static_cast<uint32_t>(payload.size()),
                   static_cast<uint64_t>(id)},
            hdr);
+  writer.register_writing();
   writer.write_packet(hdr, payload);
 }
 
@@ -305,6 +308,7 @@ error application::handle_resolve_request(packet_writer& writer, header rec_hdr,
                   static_cast<uint32_t>(payload.size()),
                   rec_hdr.operation_data},
            hdr);
+  writer.register_writing();
   writer.write_packet(hdr, payload);
   return none;
 }
@@ -361,6 +365,7 @@ error application::handle_monitor_message(packet_writer& writer,
                     static_cast<uint32_t>(payload.size()),
                     received_hdr.operation_data},
              hdr);
+    writer.register_writing();
     writer.write_packet(hdr, payload);
   }
   return none;

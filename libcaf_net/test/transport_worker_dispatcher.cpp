@@ -151,6 +151,10 @@ struct dummy_transport {
     return {};
   }
 
+  void register_writing() {
+    // nop
+  }
+
 private:
   actor_system& sys_;
   byte_buffer_ptr buf_;

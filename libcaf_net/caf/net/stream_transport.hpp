@@ -168,8 +168,6 @@ public:
   void write_packet(id_type, span<byte_buffer*> buffers) override {
     CAF_LOG_TRACE("");
     CAF_ASSERT(!buffers.empty());
-    if (this->write_queue_.empty())
-      this->manager().register_writing();
     // By convention, the first buffer is a header buffer. Every other buffer is
     // a payload buffer.
     auto i = buffers.begin();
@@ -182,6 +180,11 @@ public:
     rd_flag_ = cfg.first;
     max_ = cfg.second;
     prepare_next_read();
+  }
+
+  void register_writing() override {
+    if (this->write_queue_.empty())
+      this->manager().register_writing();
   }
 
 private:

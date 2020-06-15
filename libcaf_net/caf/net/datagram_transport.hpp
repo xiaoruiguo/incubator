@@ -134,11 +134,14 @@ public:
   void write_packet(id_type id, span<byte_buffer*> buffers) override {
     CAF_LOG_TRACE("");
     CAF_ASSERT(!buffers.empty());
-    if (packet_queue_.empty())
-      this->manager().register_writing();
     // By convention, the first buffer is a header buffer. Every other buffer is
     // a payload buffer.
     packet_queue_.emplace_back(id, buffers);
+  }
+
+  void register_writing() override {
+    if (packet_queue_.empty())
+      this->manager().register_writing();
   }
 
   /// Helper struct for managing outgoing packets

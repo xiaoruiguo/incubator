@@ -178,6 +178,9 @@ public:
     // nop
   }
 
+  /// Registers this transport for writing.
+  virtual void register_writing() = 0;
+
   /// Called by the endpoint manager when the transport can read data from its
   /// socket.
   virtual bool handle_read_event(endpoint_manager&) = 0;

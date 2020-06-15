@@ -145,6 +145,10 @@ public:
     return {};
   }
 
+  void register_writing() {
+    // nop
+  }
+
 private:
   actor_system& sys_;
   std::shared_ptr<transport_result> res_;
